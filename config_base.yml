@@ -1,0 +1,53 @@
+---
+- name: Despliegue de Automatizacion de Red - Evaluacion 4
+  hosts: cisco_routers
+  gather_facts: no
+
+  tasks:
+    # Ejercicio 1: Configuración Base (25 pts)
+    - name: Configurar Hostname, Dominio y Servidor NTP
+      cisco.ios.ios_config:
+        lines:
+          - hostname R1
+          - ip domain name inacap.cl
+          - ntp server 200.1.1.1
+
+    # Ejercicio 3: Seguridad y Usuarios (25 pts)
+    - name: Configurar Usuarios (Control Total y Solo Lectura) y Bloqueo de Seguridad
+      cisco.ios.ios_config:
+        lines:
+          - username admin privilege 15 secret cisco123
+          - username operador privilege 1 secret lectura123
+          - enable secret cisco123
+          - login block-for 60 attempts 3 within 30
+
+    # Ejercicio 2: Automatización de Interfaces y VLANs (25 pts)
+    - name: Habilitar Interfaz Fisica Trunk hacia Switch1
+      cisco.ios.ios_config:
+        lines:
+          - interface GigabitEthernet2
+          - no shutdown
+
+    - name: Configurar Subinterfaz VLAN 10 (PC1)
+      cisco.ios.ios_config:
+        lines:
+          - interface GigabitEthernet2.10
+          - encapsulation dot1Q 10
+          - ip address 192.168.10.1 255.255.255.0
+          - no shutdown
+
+    - name: Configurar Subinterfaz VLAN 20 (PC2)
+      cisco.ios.ios_config:
+        lines:
+          - interface GigabitEthernet2.20
+          - encapsulation dot1Q 20
+          - ip address 192.168.20.1 255.255.255.0
+          - no shutdown
+
+    - name: Configurar Subinterfaz VLAN 30 (SERVER)
+      cisco.ios.ios_config:
+        lines:
+          - interface GigabitEthernet2.30
+          - encapsulation dot1Q 30
+          - ip address 192.168.30.1 255.255.255.0
+          - no shutdown
