@@ -1,0 +1,25 @@
+{
+    "fecha_auditoria": "2026-07-07 22:31:58",
+    "dispositivo": "R1_Cisco_CSR1000v",
+    "interfaces_vlan": [
+        "Interface              IP-Address      OK? Method Status                Protocol",
+        "GigabitEthernet1       192.168.56.10   YES manual up                    up      ",
+        "GigabitEthernet2       unassigned      YES unset  up                    up      ",
+        "GigabitEthernet2.10    192.168.10.1    YES manual up                    up      ",
+        "GigabitEthernet2.20    192.168.20.1    YES manual up                    up      ",
+        "GigabitEthernet2.30    192.168.30.1    YES manual up                    up      ",
+        "GigabitEthernet3       unassigned      YES unset  administratively down down    ",
+        "GigabitEthernet4       unassigned      YES unset  administratively down down    "
+    ],
+    "sincronizacion_ntp": [
+        "Clock is unsynchronized, stratum 16, no reference clock",
+        "nominal freq is 250.0000 Hz, actual freq is 250.0000 Hz, precision is 2**10",
+        "ntp uptime is 92600 (1/100 of seconds), resolution is 4000",
+        "reference time is 00000000.00000000 (00:00:00.000 UTC Mon Jan 1 1900)",
+        "clock offset is 0.0000 msec, root delay is 0.00 msec",
+        "root dispersion is 13.89 msec, peer dispersion is 0.00 msec",
+        "loopfilter state is 'NSET' (Never set), drift is 0.000000000 s/s",
+        "system poll interval is 8, never updated."
+    ],
+    "estado_general": "OPERATIVO_CON_ERRORES_CERO"
+}
