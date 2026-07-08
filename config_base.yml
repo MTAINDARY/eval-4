@@ -25,29 +25,29 @@
     - name: Habilitar Interfaz Fisica Trunk hacia Switch1
       cisco.ios.ios_config:
         lines:
-          - interface GigabitEthernet2
           - no shutdown
+        parents: interface GigabitEthernet2
 
     - name: Configurar Subinterfaz VLAN 10 (PC1)
       cisco.ios.ios_config:
         lines:
-          - interface GigabitEthernet2.10
           - encapsulation dot1Q 10
           - ip address 192.168.10.1 255.255.255.0
           - no shutdown
+        parents: interface GigabitEthernet2.10
 
     - name: Configurar Subinterfaz VLAN 20 (PC2)
       cisco.ios.ios_config:
         lines:
-          - interface GigabitEthernet2.20
           - encapsulation dot1Q 20
           - ip address 192.168.20.1 255.255.255.0
           - no shutdown
+        parents: interface GigabitEthernet2.20
 
     - name: Configurar Subinterfaz VLAN 30 (SERVER)
       cisco.ios.ios_config:
         lines:
-          - interface GigabitEthernet2.30
           - encapsulation dot1Q 30
           - ip address 192.168.30.1 255.255.255.0
           - no shutdown
+        parents: interface GigabitEthernet2.30
