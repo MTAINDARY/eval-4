@@ -49,12 +49,17 @@ try:
     print("[+] Extrayendo estado del servidor NTP...")
     ntp_raw = net_connect.send_command('show ntp status')
     
-    # 3. Estructurar el reporte JSON
+    # NUEVO -> 3. Validar Conectividad Real (Ejercicio 2 de la Pauta)
+    print("[+] Validando conectividad interna mediante diagnóstico de Ping...")
+    ping_raw = net_connect.send_command('ping 192.168.10.1 repeat 3')
+    
+    # 4. Estructurar el reporte JSON
     reporte = {
         'fecha_auditoria': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         'dispositivo': 'R1_Cisco_CSR1000v',
         'interfaces_vlan': interfaces_raw.splitlines(),
         'sincronizacion_ntp': ntp_raw.splitlines(),
+        'prueba_conectividad_ping': ping_raw.splitlines(),  # Guardado en el JSON
         'estado_general': 'OPERATIVO_CON_ERRORES_CERO'
     }
     
