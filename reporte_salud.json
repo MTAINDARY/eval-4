@@ -1,31 +1,31 @@
 {
-    "fecha_auditoria": "2026-07-07 22:50:22",
+    "fecha_auditoria": "2026-07-09 11:22:31",
     "dispositivo": "R1_Cisco_CSR1000v",
     "interfaces_vlan": [
         "Interface              IP-Address      OK? Method Status                Protocol",
-        "GigabitEthernet1       192.168.56.10   YES manual up                    up      ",
-        "GigabitEthernet2       unassigned      YES unset  up                    up      ",
+        "GigabitEthernet1       192.168.56.10   YES NVRAM  up                    up      ",
+        "GigabitEthernet2       unassigned      YES NVRAM  up                    up      ",
         "GigabitEthernet2.10    192.168.10.1    YES manual up                    up      ",
         "GigabitEthernet2.20    192.168.20.1    YES manual up                    up      ",
         "GigabitEthernet2.30    192.168.30.1    YES manual up                    up      ",
-        "GigabitEthernet3       unassigned      YES unset  administratively down down    ",
-        "GigabitEthernet4       unassigned      YES unset  administratively down down    "
+        "GigabitEthernet3       unassigned      YES NVRAM  administratively down down    ",
+        "GigabitEthernet4       unassigned      YES NVRAM  administratively down down    "
     ],
     "sincronizacion_ntp": [
         "Clock is unsynchronized, stratum 16, no reference clock",
         "nominal freq is 250.0000 Hz, actual freq is 250.0000 Hz, precision is 2**10",
-        "ntp uptime is 203000 (1/100 of seconds), resolution is 4000",
+        "ntp uptime is 3200 (1/100 of seconds), resolution is 4000",
         "reference time is 00000000.00000000 (00:00:00.000 UTC Mon Jan 1 1900)",
         "clock offset is 0.0000 msec, root delay is 0.00 msec",
-        "root dispersion is 30.45 msec, peer dispersion is 0.00 msec",
-        "loopfilter state is 'NSET' (Never set), drift is 0.000000000 s/s",
+        "root dispersion is 0.49 msec, peer dispersion is 0.00 msec",
+        "loopfilter state is 'FSET' (Drift set from file), drift is 0.000000000 s/s",
         "system poll interval is 8, never updated."
     ],
     "prueba_conectividad_ping": [
         "Type escape sequence to abort.",
         "Sending 3, 100-byte ICMP Echos to 192.168.10.1, timeout is 2 seconds:",
         "!!!",
-        "Success rate is 100 percent (3/3), round-trip min/avg/max = 1/1/1 ms"
+        "Success rate is 100 percent (3/3), round-trip min/avg/max = 4/22/55 ms"
     ],
     "estado_general": "OPERATIVO_CON_ERRORES_CERO"
 }
