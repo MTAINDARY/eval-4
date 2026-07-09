@@ -1,0 +1,95 @@
+# 📓 Bitácora Consolidada de Errores y Resolución de Problemas (Troubleshooting)
+### Proyecto: Pipeline de Automatización NetDevOps — Evaluación N° 4
+**Integrantes:** Martín Cortés & José Tapia
+ 
+Esta bitácora documenta de manera técnica y cronológica la totalidad de los desafíos, errores de infraestructura, fallos de librerías y excepciones de software resueltos durante el desarrollo del proyecto.
+ 
+---
+ 
+## 🛠️ Sección A: Infraestructura Virtual y Conectividad Base
+ 
+### ❌ Error 1: Inexistencia de Interfaces GigabitEthernet en el Router Cisco
+* **Fase Afectada:** Inicialización del Entorno (Despliegue del CSR1000v en VirtualBox).
+* **Síntoma:** Al levantar el router e ingresar al CLI por primera vez, el comando `show ip interface brief` no listaba ninguna interfaz física `GigabitEthernet`, impidiendo cualquier asignación de IP.
+* **Causa Raíz:** Incompatibilidad de drivers emulados. VirtualBox configura por defecto adaptadores de red basados en Intel PRO/1000. El sistema operativo Cisco IOS-XE no reconoce estas tarjetas por defecto en entornos virtuales puros, provocando que el kernel no monte los controladores de red.
+* **Solución de Ingeniería:** Se apagó la VM en VirtualBox y en la configuración avanzada de red se modificó el "Tipo de adaptador" de todos los adaptadores a **Red paravirtualizada (virtio-net)**. Al reiniciar, el router levantó de inmediato las interfaces `Gi1` y `Gi2`.
+ 
+### ❌ Error 2: Denegación de Conexión Remota (SSH Connection Refused)
+* **Fase Afectada:** Conectividad Inicial (Netmiko / Ansible hacia el Router).
+* **Síntoma:** Al intentar conectar los scripts por puerto 22, las herramientas arrojaban excepciones del tipo `SSHException: Connection refused` o `Connection timed out`.
+* **Causa Raíz:** El router CSR1000v viene de fábrica sin el servidor SSH activo. Para que acepte conexiones cifradas, exige de manera obligatoria un nombre de dominio asignado y la generación de un par de llaves criptográficas en su microchip virtual.
+* **Solución de Ingeniería:** Se ingresó por consola manual de forma temporal para inicializar el módulo criptográfico del plano de control con los comandos:
+ ```text
+ R1(config)# ip domain name inacap.cl
+ R1(config)# crypto key generate rsa modulus 2048
+ ```
+ 
+### ❌ Error 3: Auto-Bloqueo Crítico por Aplicación de la ACL de Gestión (SSH Lockout)
+* **Fase Afectada:** Fase 1 (Hardening de Seguridad con Ansible).
+* **Síntoma:** Al ejecutar la tarea que asocia la lista de acceso `ACL_SSH_GESTION` a las líneas virtuales (`line vty 0 4`), el playbook se congelaba y terminaba abruptamente en un fallo crítico de conexión inalcanzable (`UNREACHABLE`).
+* **Causa Raíz:** Fallo en el filtrado de subredes. Al aplicar el comando `access-class ACL_SSH_GESTION in`, la ACL bloqueaba de inmediato todo el tráfico SSH entrante porque la IP de origen asignada por el entorno WSL2/Ubuntu no estaba explícitamente permitida en las líneas de la lista de acceso. El router ejecutó la regla y expulsó a Ansible a mitad del proceso.
+* **Solución de Ingeniería:** Se depuró la ACL para asegurar que la sentencia `permit` cubriera con precisión matemática el segmento completo de administración de la red de gestión (`192.168.56.0 0.0.0.255`), garantizando la comunicación persistente entre el nodo de control y el router.
+ 
+---
+ 
+## 🛠️ Sección B: Entorno de Control de Linux y Librerías de Python
+ 
+### ❌ Error 4: Bloqueo perimetral por Huella Digital SSH (Paramiko Fingerprint Error)
+* **Fase Afectada:** Fase 1 (Autenticación automatizada de Ansible).
+* **Síntoma:** El despliegue abortaba lanzando el error: `paramiko: The authenticity of host '192.168.56.10' can't be established. The ssh-rsa key fingerprint is... fatal: [R1]: FAILED!`
+* **Causa Raíz:** Mecanismo de protección interactiva de la librería `Paramiko`. Al ser la primera vez que la automatización se conectaba al router, el sistema operativo Linux exigía una confirmación manual (*yes/no*) para registrar la llave en el archivo `known_hosts`. Al correr en modo desatendido, la tarea fallaba por tiempo de espera.
+* **Solución de Ingeniería:** Se deshabilitó la verificación estricta de llaves del host creando un archivo de configuración local **`ansible.cfg`** en la raíz del repositorio con la directiva:
+ ```ini
+ [defaults]
+ host_key_checking = False
+ ```
+ 
+### ❌ Error 5: Advertencias de Ejecutables fuera de la Variable PATH de Linux
+* **Fase Afectada:** Preparación del Servidor (Instalación de paquetes con `pip`).
+* **Síntoma:** Mensajes amarillos en la consola: `WARNING: The script textfsm is installed in '/home/martin/.local/bin' which is not on PATH.`
+* **Causa Raíz:** Python instala las herramientas binarias y parsers de CLI (como `textfsm` de Netmiko) en el directorio local del usuario. Al no estar esa ruta indexada en la variable del sistema de Linux, los comandos globales de automatización no pueden ser invocados directamente.
+* **Solución de Ingeniería:** Se solucionó integrando la ruta de forma permanente al perfil de la terminal ejecutando el comando: `export PATH=$PATH:/home/martin/.local/bin` dentro del archivo `.bashrc`.
+ 
+### ❌ Error 6: Inundación de Warnings por `ansible-pylibssh` Faltante y Depreciaciones
+* **Fase Afectada:** Legibilidad del Pipeline (Ansible Core logs).
+* **Síntoma:** Al ejecutar playbooks, la pantalla se llenaba de advertencias rojas y amarillas sobre la ausencia de la librería nativa de C `pylibssh` y funciones obsoletas del núcleo de automatización.
+* **Causa Raíz:** Ansible notifica que está usando `Paramiko` como respaldo debido a la falta del compilador optimizado de SSH de C, sumado a alertas de código interno de Ansible Core. Aunque no impide el funcionamiento, satura la salida de errores.
+* **Solución de Ingeniería:** Se limpió la interfaz agregando la instrucción `deprecation_warnings = False` en el archivo `ansible.cfg`, aislando los logs únicamente para cambios reales (`changed`) en el router.
+ 
+### ❌ Error 7: Excepción por Módulo de Python No Encontrado (`ModuleNotFoundError: netmiko`)
+* **Fase Afectada:** Fase 2 y 3 (Scripts individuales de automatización programática).
+* **Síntoma:** Al ejecutar `python3 validar_red.py` la consola arrojaba un quiebre inmediato indicando que la librería `netmiko` no existía.
+* **Causa Raíz:** Conflicto de entornos de ejecución de Python. La máquina de control posee múltiples versiones instaladas (Python nativo del sistema vs entorno local). `pip` instaló la librería en una ruta de librerías diferente a la que el comando genérico `python3` invocaba por defecto.
+* **Solución de Ingeniería:** Se estandarizó la llamada llamando explícitamente al intérprete correcto alineado al gestor de paquetes o reinstalando las dependencias mediante el comando unificado `python3 -m pip install netmiko`.
+ 
+---
+ 
+## 🛠️ Sección C: Errores de Código, Sintaxis y Lógica
+ 
+### ❌ Error 8: Colapso de Contextos Jerárquicos en Tareas de Ansible
+* **Fase Afectada:** Fase 1 (Configuración de Seguridad).
+* **Síntoma:** El bloque de Ansible encargado de inyectar las líneas de comando devolvía un error de sintaxis nativa de Cisco IOS (`Invalid input detected`).
+* **Causa Raíz:** Mezcla de submodos de configuración dentro de un mismo bloque de comandos (`lines`). Se intentó crear la ACL y configurar las líneas VTY de forma continua. En Cisco CLI, no se puede pasar al modo `line vty` si no se sale primero del submodo `config-std-nacl`.
+* **Solución de Ingeniería:** Se aplicó modularidad de infraestructura separando los procesos en dos tareas de Ansible totalmente independientes: una para la definición de la ACL (`parents: ip access-list standard...`) y otra dedicada al hardening de las líneas virtuales (`parents: line vty 0 4`).
+ 
+### ❌ Error 9: Excepción de Sintaxis en f-strings de Python
+* **Fase Afectada:** Fase 2 (Módulo Desafío - Alertas por Email).
+* **Síntoma:** El pipeline se detenía lanzando un: `SyntaxError: invalid syntax` apuntando a la definición del cuerpo del correo.
+* **Causa Raíz:** Error tipográfico (*typo*). Se duplicó por error el prefijo de formateo dinámico escribiendo **`ff`** en lugar de `f` (`msg = MIMEText(ff"ALERTA...")`), un token que rompe las reglas gramaticales del intérprete de Python.
+* **Solución de Ingeniería:** Se editó el archivo de validación mediante `nano` y se eliminó el carácter sobrante corrigiendo la estructura nativa: `msg = MIMEText(f"ALERTA...")`.
+ 
+### ❌ Error 10: Denegación de Permisos de Archivo en el Shell (Bash Error)
+* **Fase Afectada:** Fase 4 (Orquestación Maestro).
+* **Síntoma:** Al intentar arrancar el entorno integrado mediante `./ejecutar_todo.sh`, Linux respondía con un rotundo `bash: ./ejecutar_todo.sh: Permission denied`.
+* **Causa Raíz:** Políticas de seguridad del sistema de archivos POSIX de Linux. Los archivos de script creados de cero carecen del bit de ejecución (`x`) por defecto, naciendo únicamente con atributos de lectura y escritura (`rw-`).
+* **Solución de Ingeniería:** Se alteró la máscara de bits del archivo otorgándole privilegios operativos mediante la utilidad de consola:
+ ```bash
+ chmod +x ejecutar_todo.sh
+ ```
+ 
+---
+ 
+## 💾 Conclusión de Persistencia (RAM vs NVRAM)
+Como lección transversal de control de calidad, se identificó que todas las tareas inyectadas operaban de forma predeterminada sobre la memoria volátil del router (`running-config`). Para evitar que un apagón de la máquina virtual borrara el trabajo, se consolidó la persistencia de datos asegurando la ejecución del comando `write memory` en el CLI y aplicando la bandera automatizada `save_when: always` al cierre del despliegue del playbook.
+```
+ 
